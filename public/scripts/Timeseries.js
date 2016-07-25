@@ -12,7 +12,7 @@ data from TimeSeries.
 **/
 function onclick_machineServiceData() {
   lineChartMap = getMachineServiceData();
-  setInterval(updateChart,5000);
+  setInterval(updateChart,3000);
 }
 
 /**
@@ -60,6 +60,7 @@ function getMachineServiceData() {
     var assetUaaRequest = new XMLHttpRequest();
     var assetAuth = connectedDeviceConfig.uaaBase64ClientCredential;
     var tagString = getTagsSelectedValue();
+    // TODO: Remove this call to UAA.  we should proxy request through web server, and add token there.
     var assetUaaParams = "grant_type=client_credentials&client_id=" + connectedDeviceConfig.uaaClientId;
 
     assetUaaRequest.open('GET', connectedDeviceConfig.uaaURL + "/oauth/token?" + assetUaaParams, true);
@@ -127,7 +128,7 @@ function getMachineServiceData() {
       }
       else
       {
-        console.log("No access token");
+        // console.log("No access token");
       }
 
     };
@@ -154,6 +155,7 @@ function getMachineServiceDataWithoutMicroservice() {
   timeSeriesUaaRequest.open('GET', connectedDeviceConfig.uaaURL + "/oauth/token?" + uaaParams, true);
   timeSeriesUaaRequest.setRequestHeader("Authorization", "Basic " + timeSeriesAuth);
 
+  // TODO: Remove this call to UAA.  we should proxy request through web server, and add token there.
   timeSeriesUaaRequest.onreadystatechange = function() {
     if (timeSeriesUaaRequest.readyState == 4) {
       var res = JSON.parse(timeSeriesUaaRequest.responseText);
@@ -174,7 +176,8 @@ function getMachineServiceDataWithoutMicroservice() {
       {
         myTimeSeriesBody.tags.push({
           "name" : tags[i],
-          "limit": 25
+          "limit": 25,
+          "order": "desc"
       });
       }
       if(starttime) {
@@ -197,13 +200,14 @@ function getMachineServiceDataWithoutMicroservice() {
         else {
           document.getElementById("windService_machine_yearly").innerHTML = "Error getting data for tags";
         }
-      }
+      };
     }
     else
     {
-      console.log("No access token");
+      // console.log("No access token");
     }
 
+    // What?  These variables are out of scope here... not sure if this works.
     if (tagString != undefined)
     {
       timeSeriesGetData.send(JSON.stringify(myTimeSeriesBody));
@@ -285,6 +289,7 @@ function constructMachineChartResponse(data) {
     add_machine_div.appendChild(canvas);
 
     var ctx = document.getElementById(canvas.id).getContext("2d");
+    // console.log('constructing new chart, with points: ' + data.tags[i].length);
     var lineChartDemo = new Chart(ctx).Line(getMachineLineChartData_each(data.tags[i]), {
         responsive: true,
         animation: false
@@ -320,7 +325,7 @@ function updateChart() {
         for(j = 0; j < datapoints.length; j++) {
           lineChartDemo = lineChartMap.get(data.tags[i].name);
           var d = new Date(datapoints[j][0]);
-          var formatDate = monthNames[d.getMonth()]+'-'+d.getFullYear()+'-'+d.getDate()+' '+d.getHours()+' '+d.getMinutes()+':'+d.getSeconds()+" "+d.getMilliseconds();
+          var formatDate = d.toLocaleDateString() + ' ' + d.toLocaleTimeString();
           lineChartDemo.addData([datapoints[j][1]],formatDate);
           lineChartDemo.removeData();
         }
@@ -348,6 +353,7 @@ function updateChartWithoutMicroservice() {
     uaaRequest.open('GET', connectedDeviceConfig.uaaURL + "/oauth/token?" + uaaParams, true);
     uaaRequest.setRequestHeader("Authorization", "Basic " + auth);
 
+    // TODO: Remove this call to UAA.  we should proxy request through web server, and add token there.
     uaaRequest.onreadystatechange = function() {
       if (uaaRequest.readyState == 4) {
         var res = JSON.parse(uaaRequest.responseText);
@@ -368,7 +374,8 @@ function updateChartWithoutMicroservice() {
         {
           myTimeSeriesBody.tags.push({
             "name" : tags[i],
-            "limit": 25
+            "limit": 25,
+            "order": "desc"
         });
         }
 
@@ -385,12 +392,14 @@ function updateChartWithoutMicroservice() {
 
             for(i = 0; i < data.tags.length; i++) {
               var datapoints = data.tags[i].results[0].values;
-              for(j = 0; j < datapoints.length; j++) {
+              for(j = datapoints.length - 1; j >= 0; j--) {
+                // console.log('j: ' + j);
                 lineChartDemo = lineChartMap.get(data.tags[i].name);
                 var d = new Date(datapoints[j][0]);
-                var formatDate = monthNames[d.getMonth()]+'-'+d.getFullYear()+'-'+d.getDate()+' '+d.getHours()+' '+d.getMinutes()+':'+d.getSeconds()+" "+d.getMilliseconds();
-                lineChartDemo.addData([datapoints[j][1]],formatDate);
+                var formatDate = d.toLocaleDateString() + ' ' + d.toLocaleTimeString();
+                // console.log('formatDate: ' + formatDate);
                 lineChartDemo.removeData();
+                lineChartDemo.addData([datapoints[j][1]],formatDate);
               }
             }
           }
@@ -403,7 +412,7 @@ function updateChartWithoutMicroservice() {
         timeSeriesGetData.send(JSON.stringify(myTimeSeriesBody));
       }
       else {
-        console.log("No access token");
+        // console.log("No access token");
       }
     };
     uaaRequest.onerror = function() {
@@ -426,19 +435,17 @@ function getMachineLineChartData_each(tag){
           pointStrokeColor: "#fff",
           pointHighlightFill: "#fff",
           pointHighlightStroke: "rgba(220,220,220,1)",
-          data: [0]
+          data: []
   };
 
   var lineChartData = {
-        labels : [0],
+        labels : [],
         datasets : [dataset]
   };
   var datapoints = tag.results[0].values;
-  var dataPointMap =  new Map();
-  for(j = 0; j < datapoints.length; j++) {
+  for(j = datapoints.length - 1; j >= 0; j--) {
     var d = new Date(datapoints[j][0]);
-    var formatDate = monthNames[d.getMonth()]+'-'+d.getFullYear()+'-'+d.getDate()+' '+d.getHours()+' '+d.getMinutes()+':'+d.getSeconds()+" "+d.getMilliseconds();
-    //chartLabels.push(formatDate);
+    var formatDate = d.toLocaleDateString() + ' ' + d.toLocaleTimeString();
     lineChartData.labels.push(formatDate);
     lineChartData.datasets[0].data.push(datapoints[j][1]);
   }
@@ -522,7 +529,7 @@ function configureTagsTimeseriesData() {
             }
             else
             {
-              console.log("No access token");
+              // console.log("No access token");
             }
           };
 
@@ -593,9 +600,3 @@ function getConnectedDeviceConfig() {
     request.send();
   });
 }
-
-/*
-var for month
-*/
-var monthNames = ["Jan", "Feb", "Mar", "Apr", "May", "Jun",
-"Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
