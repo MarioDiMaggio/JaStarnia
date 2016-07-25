@@ -113,7 +113,7 @@ function getMachineServiceData() {
             }
           }
           else {
-            document.getElementById("predix_asset_table").innerHTML = "No asset model info available for tag: " + tagString;
+            document.getElementById("predix_asset_table").innerHTML = "No data found for Asset: " + tagString;
             var table = document.getElementById("aTable");
             while (table.firstChild) {
                 table.removeChild(table.firstChild);
@@ -330,6 +330,7 @@ function updateChart() {
           lineChartDemo.removeData();
         }
       }
+      showFinalTweetButton(data.tags);
     }
   };
   request.onerror = function() {
@@ -339,6 +340,18 @@ function updateChart() {
   }
 }
 
+function showFinalTweetButton(tags) {
+  var edisonTag = false;
+  tags.forEach(function(tag) {
+    if (tag.name.indexOf(':TAE') > -1) {
+      edisonTag = true;
+    }
+  });
+  // console.log('edisonTag: ' + edisonTag);
+  if (edisonTag) {
+    document.getElementById('final-tweet-btn').className = 'display-final-tweet';
+  }
+}
 
 /**
 Method to update the Chart with the latest data from the selected tags
@@ -402,6 +415,8 @@ function updateChartWithoutMicroservice() {
                 lineChartDemo.addData([datapoints[j][1]],formatDate);
               }
             }
+
+            showFinalTweetButton(data.tags);
           }
           else {
             {
