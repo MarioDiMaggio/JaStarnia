@@ -99,3 +99,12 @@ li {
   height:500px;
   width:400px;
 }
+
+.hide-final-tweet {
+  display: none;
+}
+
+.display-final-tweet {
+  display: block;
+  float: bottom;
+}
